@@ -1,9 +1,7 @@
 package com.github.novicezk.midjourney.wss.handle;
 
 import cn.hutool.core.text.CharSequenceUtil;
-import com.github.novicezk.midjourney.Constants;
 import com.github.novicezk.midjourney.enums.MessageType;
-import com.github.novicezk.midjourney.enums.TaskAction;
 import com.github.novicezk.midjourney.support.Task;
 import com.github.novicezk.midjourney.support.TaskCondition;
 import lombok.extern.slf4j.Slf4j;
@@ -13,7 +11,6 @@ import net.dv8tion.jda.api.utils.data.DataObject;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
-import java.util.function.Predicate;
 
 @Slf4j
 @Component
@@ -53,19 +50,12 @@ public class ErrorMessageHandler extends MessageHandler {
 		Task targetTask = null;
 		if (CharSequenceUtil.startWith(footerText, "/imagine ")) {
 			String finalPrompt = CharSequenceUtil.subAfter(footerText, "/imagine ", false);
-			if (CharSequenceUtil.contains(finalPrompt, "https://")) {
-				// 有可能为blend操作
-				String taskId = this.discordHelper.findTaskWithCdnUrl(finalPrompt.split(" ")[0]);
-				if (taskId != null) {
-					targetTask = this.taskQueueHelper.getRunningTask(taskId);
-				}
-			}
-			if (targetTask == null) {
-				targetTask = this.taskQueueHelper.findRunningTask(imaginePredicate(finalPrompt)).findFirst().orElse(null);
-			}
+			targetTask = this.taskQueueHelper.findRunningTask(new TaskCondition().setFinalPromptEn(finalPrompt))
+					.findFirst().orElse(null);
 		} else if (CharSequenceUtil.startWith(footerText, "/describe ")) {
 			String imageUrl = CharSequenceUtil.subAfter(footerText, "/describe ", false);
-			String taskId = this.discordHelper.findTaskWithCdnUrl(imageUrl);
+			int hashStartIndex = imageUrl.lastIndexOf("/");
+			String taskId = CharSequenceUtil.subBefore(imageUrl.substring(hashStartIndex + 1), ".", true);
 			targetTask = this.taskQueueHelper.getRunningTask(taskId);
 		}
 		if (targetTask == null) {
@@ -79,12 +69,6 @@ public class ErrorMessageHandler extends MessageHandler {
 		}
 		targetTask.fail(reason);
 		targetTask.awake();
-	}
-
-	private Predicate<Task> imaginePredicate(String prompt) {
-		return t -> t.getAction() == TaskAction.IMAGINE &&
-				(prompt.startsWith(t.getPromptEn())
-						|| CharSequenceUtil.contains(prompt, t.getPropertyGeneric(Constants.TASK_PROPERTY_PROMPT_EN_WITHOUT_IMAGE)));
 	}
 
 	@Override

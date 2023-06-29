@@ -51,7 +51,8 @@ public class BlendMessageHandler extends MessageHandler {
 					return;
 				}
 				String url = getRealUrl(urls.get(0));
-				String taskId = this.discordHelper.findTaskWithCdnUrl(url);
+				int hashStartIndex = url.lastIndexOf("/");
+				String taskId = CharSequenceUtil.subBefore(url.substring(hashStartIndex + 1), ".", true);
 				TaskCondition condition = new TaskCondition()
 						.setId(taskId)
 						.setActionSet(Set.of(TaskAction.BLEND))
@@ -116,7 +117,8 @@ public class BlendMessageHandler extends MessageHandler {
 					return;
 				}
 				String url = getRealUrl(urls.get(0));
-				String taskId = this.discordHelper.findTaskWithCdnUrl(url);
+				int hashStartIndex = url.lastIndexOf("/");
+				String taskId = CharSequenceUtil.subBefore(url.substring(hashStartIndex + 1), ".", true);
 				TaskCondition condition = new TaskCondition()
 						.setId(taskId)
 						.setActionSet(Set.of(TaskAction.BLEND))
